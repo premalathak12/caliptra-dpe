@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/exp/slices"
+	//"golang.org/x/exp/slices"
 )
 
 const (
@@ -75,11 +75,11 @@ type TestDPEInstance interface {
 func GetTestTarget(support_needed []string) (TestDPEInstance, error) {
 
 	if testTargetType == EMULATOR {
-		for i := 0; i < len(support_needed); i++ {
+	/*	for i := 0; i < len(support_needed); i++ {
 			if !slices.Contains(emulator_supports, support_needed[i]) {
 				return nil, errors.New("Requested support is not supported in the emulator")
 			}
-		}
+		} */
 		instance, err := GetEmulatorTarget(support_needed)
 		if err != nil {
 			return nil, err
