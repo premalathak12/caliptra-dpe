@@ -15,6 +15,8 @@ use crate::{
 use crypto::{Crypto, Digest, Hasher};
 use platform::{Platform, MAX_CHUNK_SIZE};
 use zerocopy::{AsBytes, FromBytes};
+use log::{error, info, trace, warn};
+//use std::println;
 
 pub trait DpeTypes {
     type Crypto<'a>: Crypto
@@ -109,6 +111,8 @@ impl DpeInstance {
         locality: u32,
         cmd: &[u8],
     ) -> Result<Response, DpeErrorCode> {
+        trace!("Invoke command .............2");
+        println!("Invoke command .............2");
         let command = Command::deserialize(cmd)?;
         let resp = match command {
             Command::GetProfile => Ok(Response::GetProfile(self.get_profile(&mut env.platform)?)),

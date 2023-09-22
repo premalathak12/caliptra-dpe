@@ -47,6 +47,7 @@ impl CommandExecution for CertifyKeyCmd {
         env: &mut DpeEnv<impl DpeTypes>,
         locality: u32,
     ) -> Result<Response, DpeErrorCode> {
+        //println!("Ceritfy Key...................1");
         let idx = dpe.get_active_context_pos(&self.handle, locality)?;
         let context = &dpe.contexts[idx];
 

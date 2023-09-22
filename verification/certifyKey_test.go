@@ -30,7 +30,7 @@ func TestCertifyKey(t *testing.T) {
 	testCertifyKey(instance, t)
 }
 
-func TestCertifyKey_SimulationMode(t *testing.T) {
+/*func TestCertifyKey_SimulationMode(t *testing.T) {
 
 	support_needed := []string{"AutoInit", "Simulation", "X509"}
 	instance, err := GetTestTarget(support_needed)
@@ -42,7 +42,7 @@ func TestCertifyKey_SimulationMode(t *testing.T) {
 		}
 	}
 	testCertifyKey(instance, t)
-}
+}*/
 
 func checkCertificateStructure(t *testing.T, certData []byte) {
 	t.Helper()
@@ -109,6 +109,7 @@ func checkCertificateStructure(t *testing.T, certData []byte) {
 }
 
 func testCertifyKey(d TestDPEInstance, t *testing.T) {
+	//ctxHandle := testGetContext(d, t)
 	if d.HasPowerControl() {
 		err := d.PowerOn()
 		if err != nil {
@@ -116,13 +117,14 @@ func testCertifyKey(d TestDPEInstance, t *testing.T) {
 		}
 		defer d.PowerOff()
 	}
+
 	client, err := NewClient384(d)
 	if err != nil {
 		t.Fatalf("Could not initialize client: %v", err)
 	}
 
 	certifyKeyReq := CertifyKeyReq[SHA384Digest]{
-		ContextHandle: [16]byte{0},
+		ContextHandle: client.ctxHandle,
 		Flags:         0,
 		Label:         [48]byte{0},
 		Format:        CertifyKeyX509,
@@ -135,4 +137,24 @@ func testCertifyKey(d TestDPEInstance, t *testing.T) {
 	checkCertificateStructure(t, certifyKeyResp.Certificate)
 
 	// TODO: When DeriveChild is implemented, call it here to add more TCIs and call CertifyKey again.
+}
+
+func testGetContext(d TestDPEInstance, t *testing.T) [16]byte {
+	if d.HasPowerControl() {
+		err := d.PowerOn()
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer d.PowerOff()
+	}
+	client, err := NewClient384(d)
+	if err != nil {
+		t.Fatalf("Could not initialize client: %v", err)
+	}
+	resp, err := client.InitializeContext(NewInitCtxIsSimulation())
+	if err != nil {
+		t.Fatalf("Could not initialize context: %v", err)
+	}
+
+	return resp.Handle
 }

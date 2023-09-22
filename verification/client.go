@@ -36,6 +36,7 @@ type Client[CurveParameter Curve, Digest DigestAlgorithm] struct {
 	VendorSku    uint32
 	MaxTciNodes  uint32
 	Flags        uint32
+	ctxHandle    [16]byte
 }
 
 // Client256 is a client that implements DPE_PROFILE_IROT_P256_SHA256
@@ -78,6 +79,10 @@ func NewClient[C Curve, D DigestAlgorithm](t Transport) (*Client[C, D], error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not query DPE for profile: %w", err)
 	}
+	ctxResp, err := getCtx(t, rsp.Profile)
+	if err != nil {
+		return nil, fmt.Errorf("could not query ctx: %w", err)
+	}
 
 	if err := dpeProfileImplementsTypeConstraints[C, D](rsp.Profile); err != nil {
 		return nil, err
@@ -91,6 +96,7 @@ func NewClient[C Curve, D DigestAlgorithm](t Transport) (*Client[C, D], error) {
 		VendorId:     rsp.VendorId,
 		VendorSku:    rsp.VendorSku,
 		Flags:        rsp.Flags,
+		ctxHandle:    ctxResp.Handle,
 	}, nil
 }
 
@@ -104,10 +110,23 @@ func NewClient384(t Transport) (*Client[NISTP384Parameter, SHA384Digest], error)
 	return NewClient[NISTP384Parameter, SHA384Digest](t)
 }
 
+func getCtx(t Transport, profile Profile) (*InitCtxResp, error) {
+	var respStruct InitCtxResp
+	var cmd InitCtxCmd
+
+	cmd = InitCtxCmd{flags: 1 << 30}
+
+	if _, err := execCommand(t, CommandGetProfile, profile, cmd, &respStruct); err != nil {
+		return nil, err
+	}
+
+	return &respStruct, nil
+}
+
 func (c *Client[_, _]) InitializeContext(cmd *InitCtxCmd) (*InitCtxResp, error) {
 	var respStruct InitCtxResp
 
-	if _, err := execCommand(c.transport, CommandInitializeContext, c.Profile, cmd, &respStruct); err != nil {
+	if _, err := execCommand(c.transport, CommandGetProfile, c.Profile, cmd, &respStruct); err != nil {
 		return nil, err
 	}
 
@@ -252,4 +271,41 @@ func (s *Support) ToFlags() uint32 {
 		flags |= (1 << 21)
 	}
 	return flags
+}
+
+func (s *Support) ToSupport(flag uint32) *Support {
+	if flag&(1<<31) != 0 {
+		s.Simulation = true
+	}
+	if flag&(1<<30) != 0 {
+		s.ExtendTci = true
+	}
+	if flag&(1<<29) != 0 {
+		s.AutoInit = true
+	}
+	if flag&(1<<28) != 0 {
+		s.Tagging = true
+	}
+	if flag&(1<<27) != 0 {
+		s.RotateContext = true
+	}
+	if flag&(1<<26) != 0 {
+		s.X509 = true
+	}
+	if flag&(1<<25) != 0 {
+		s.Csr = true
+	}
+	if flag&(1<<24) != 0 {
+		s.IsSymmetric = true
+	}
+	if flag&(1<<23) != 0 {
+		s.InternalInfo = true
+	}
+	if flag&(1<<22) != 0 {
+		s.InternalDice = true
+	}
+	if flag&(1<<21) != 0 {
+		s.IsCA = true
+	}
+	return s
 }
